@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 # Obtener la URL de conexión del entorno de Render
 # **CLAVE:** Si esta variable no está, el programa fallará.
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("postgresql://db_celular_r4jb_user:nOfwAq4fZ96WmRlDjE6WXrNIFghLtAC7@dpg-d4mcdqe3jp1c739r2fpg-a/db_celular_r4jb")
 
 # Si la variable no está (como en el error anterior), hacemos que el error sea claro
 if not DATABASE_URL:
