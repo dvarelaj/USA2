@@ -1,41 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Registro de Venta</title>
+    <title>Registro de Salida y Venta</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        input[type="text"], input[type="number"], select { 
+            width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; 
+            font-size: 1em; /* Mejora la legibilidad móvil */
+        }
+        .form-group { margin-bottom: 20px; }
+        button[type="submit"] {
+            background-color: #28a745; color: white; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; 
+            font-size: 1.2em; width: 100%; transition: background-color 0.3s;
+        }
+        button[type="submit"]:hover { background-color: #218838; }
+        #message { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
 </head>
 <body>
-    <h1>Registro de Salida</h1>
-    <form id="saleForm">
-        <label for="imei">IMEI (Escanear aquí):</label><br>
-        <input type="text" id="imei" name="imei" required><br><br>
+    <div class="container">
+        <h1>📱 Registro de Venta y Salida</h1>
+        <form id="saleForm">
+            
+            <div class="form-group">
+                <label for="imei">IMEI (Escanear aquí):</label>
+                <input type="text" id="imei" name="imei" required placeholder="Escanee el IMEI del celular" style="font-size: 1.1em; font-weight: bold;">
+            </div>
 
-        <label for="tipo_cliente">Tipo de Cliente:</label><br>
-        <select id="tipo_cliente" name="tipo_cliente" required>
-            <option value="">Seleccione...</option>
-            <option value="Detal">Venta Detal</option>
-            <option value="Consignacion">Entrega en Consignación</option>
-        </select><br><br>
+            <div class="form-group">
+                <label for="vendedor">Vendedor:</label>
+                <input type="text" id="vendedor" name="vendedor" required placeholder="Nombre o ID del vendedor">
+            </div>
 
-        <label for="nombre_cliente">Nombre Cliente/Negocio:</label><br>
-        <input type="text" id="nombre_cliente" name="nombre_cliente" required><br><br>
-        
-        <label for="precio_venta">Precio de Venta:</label><br>
-        <input type="number" id="precio_venta" name="precio_venta" step="0.01" required><br><br>
+            <div class="form-group">
+                <label for="tipo_cliente">Tipo de Cliente:</label>
+                <select id="tipo_cliente" name="tipo_cliente" required>
+                    <option value="">Seleccione...</option>
+                    <option value="Detal">Venta al Detal (Pago inmediato)</option>
+                    <option value="Consignacion">Entrega en Consignación (Pendiente de pago)</option>
+                </select>
+            </div>
 
-        <button type="submit">Registrar Venta/Consignación</button>
-    </form>
-    <p id="message"></p>
+            <div class="form-group">
+                <label for="nombre_cliente">Nombre Cliente/Negocio:</label>
+                <input type="text" id="nombre_cliente" name="nombre_cliente" required placeholder="Nombre del comprador o negocio">
+            </div>
+            
+            <div class="form-group">
+                <label for="precio_venta">Precio de Venta:</label>
+                <input type="number" id="precio_venta" name="precio_venta" step="0.01" required placeholder="Ej: 1500000">
+            </div>
+
+            <button type="submit">Registrar Venta/Consignación</button>
+        </form>
+        <div id="message"></div>
+    </div>
 
     <script>
         document.getElementById('saleForm').onsubmit = async (e) => {
             e.preventDefault();
+            const messageElement = document.getElementById('message');
+            messageElement.style.display = 'none';
+            messageElement.className = '';
 
             const data = {
                 imei: document.getElementById('imei').value.trim(),
+                vendedor: document.getElementById('vendedor').value.trim(), // Captura el vendedor
                 tipo_cliente: document.getElementById('tipo_cliente').value,
                 nombre_cliente: document.getElementById('nombre_cliente').value,
                 precio_venta: parseFloat(document.getElementById('precio_venta').value)
             };
+            
+            if (isNaN(data.precio_venta)) {
+                 messageElement.textContent = 'Error: El precio de venta debe ser un número válido.';
+                 messageElement.className = 'error';
+                 messageElement.style.display = 'block';
+                 return;
+            }
+            if (data.vendedor === "") {
+                 messageElement.textContent = 'Error: El campo Vendedor es obligatorio.';
+                 messageElement.className = 'error';
+                 messageElement.style.display = 'block';
+                 return;
+            }
+
 
             const response = await fetch('/api/v1/inventario/salida', {
                 method: 'POST',
@@ -44,15 +98,16 @@
             });
 
             const result = await response.json();
-            const messageElement = document.getElementById('message');
 
             if (response.ok) {
-                messageElement.textContent = `IMEI ${result.imei} registrado. Nuevo estado: ${result.nuevo_estado}.`;
-                messageElement.style.color = 'green';
+                messageElement.textContent = `IMEI ${result.imei} registrado. Nuevo estado: ${result.nuevo_estado}. Registrado por: ${data.vendedor}.`;
+                messageElement.className = 'success';
+                document.getElementById('saleForm').reset(); // Limpiar formulario
             } else {
-                messageElement.textContent = `Error: ${result.detail}`;
-                messageElement.style.color = 'red';
+                messageElement.textContent = `Error (${response.status}): ${result.detail}`;
+                messageElement.className = 'error';
             }
+            messageElement.style.display = 'block';
         };
     </script>
 </body>
