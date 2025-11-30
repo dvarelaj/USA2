@@ -13,11 +13,21 @@
             font-size: 1em; /* Mejora la legibilidad móvil */
         }
         .form-group { margin-bottom: 20px; }
-        button[type="submit"] {
+        .button-group { margin-top: 20px; } /* Nuevo grupo para separar botones */
+        .button-group button { margin-bottom: 10px; }
+
+        .btn-venta {
             background-color: #28a745; color: white; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; 
             font-size: 1.2em; width: 100%; transition: background-color 0.3s;
         }
-        button[type="submit"]:hover { background-color: #218838; }
+        .btn-venta:hover { background-color: #218838; }
+
+        .btn-reingreso {
+            background-color: #ffc107; color: black; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; 
+            font-size: 1.2em; width: 100%; transition: background-color 0.3s;
+        }
+        .btn-reingreso:hover { background-color: #e0a800; }
+
         #message { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; display: none; }
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
@@ -45,117 +55,4 @@
 
             <div class="form-group">
                 <label for="tipo_cliente">Tipo de Cliente:</label>
-                <select id="tipo_cliente" name="tipo_cliente" required>
-                    <option value="">Seleccione...</option>
-                    <option value="Detal">Venta al Detal (Pago inmediato)</option>
-                    <option value="Consignacion">Entrega en Consignación (Pendiente de pago)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="nombre_cliente">Nombre Cliente/Negocio:</label>
-                <input type="text" id="nombre_cliente" name="nombre_cliente" required placeholder="Nombre del comprador o negocio">
-            </div>
-            
-            <div class="form-group">
-                <label for="precio_venta">Precio de Venta:</label>
-                <input type="number" id="precio_venta" name="precio_venta" step="0.01" required placeholder="Ej: 1500000">
-            </div>
-
-            <button type="submit">Registrar Venta/Consignación</button>
-        </form>
-        <div id="message"></div>
-    </div>
-    <button type="submit">Registrar Venta/Consignación</button>
-
-            <button type="button" onclick="reingresarInventario()" 
-                    style="background-color: #ffc107; color: black; margin-top: 15px;">
-                Reingresar Celular (Devolución)
-            </button>
-        </form>
-
-    <script>
-        document.getElementById('saleForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const messageElement = document.getElementById('message');
-            messageElement.style.display = 'none';
-            messageElement.className = '';
-
-            const data = {
-                imei: document.getElementById('imei').value.trim(),
-                vendedor: document.getElementById('vendedor').value.trim(), // Captura el vendedor
-                tipo_cliente: document.getElementById('tipo_cliente').value,
-                nombre_cliente: document.getElementById('nombre_cliente').value,
-                precio_venta: parseFloat(document.getElementById('precio_venta').value)
-            };
-            
-            if (isNaN(data.precio_venta)) {
-                 messageElement.textContent = 'Error: El precio de venta debe ser un número válido.';
-                 messageElement.className = 'error';
-                 messageElement.style.display = 'block';
-                 return;
-            }
-            if (data.vendedor === "") {
-                 messageElement.textContent = 'Error: El campo Vendedor es obligatorio.';
-                 messageElement.className = 'error';
-                 messageElement.style.display = 'block';
-                 return;
-            }
-
-
-            const response = await fetch('/api/v1/inventario/salida', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                messageElement.textContent = `IMEI ${result.imei} registrado. Nuevo estado: ${result.nuevo_estado}. Registrado por: ${data.vendedor}.`;
-                messageElement.className = 'success';
-                document.getElementById('saleForm').reset(); // Limpiar formulario
-            } else {
-                messageElement.textContent = `Error (${response.status}): ${result.detail}`;
-                messageElement.className = 'error';
-            }
-            messageElement.style.display = 'block';
-            // Función para reingresar un celular (devolución)
-        async function reingresarInventario() {
-            const messageElement = document.getElementById('message');
-            messageElement.style.display = 'none';
-            messageElement.className = '';
-
-            const imei = document.getElementById('imei').value.trim();
-
-            if (!imei) {
-                messageElement.textContent = 'Error: Debe escanear o ingresar un IMEI para el reingreso.';
-                messageElement.className = 'error';
-                messageElement.style.display = 'block';
-                return;
-            }
-
-            const data = { imei: imei };
-
-            const response = await fetch('/api/v1/inventario/reingreso', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                messageElement.textContent = `¡IMEI ${result.imei} reingresado! Estado anterior: ${result.estado_anterior}. Ahora está en 'En Inventario'.`;
-                messageElement.className = 'success';
-                document.getElementById('saleForm').reset(); // Limpiar formulario
-            } else {
-                messageElement.textContent = `Error (${response.status}): ${result.detail}`;
-                messageElement.className = 'error';
-            }
-            messageElement.style.display = 'block';
-        }
-        };
-    </script>
-</body>
-</html>
+                <select
