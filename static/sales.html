@@ -35,7 +35,12 @@
 
             <div class="form-group">
                 <label for="vendedor">Vendedor:</label>
-                <input type="text" id="vendedor" name="vendedor" required placeholder="Nombre o ID del vendedor">
+                <select id="vendedor" name="vendedor" required>
+                    <option value="">Seleccione el Vendedor</option>
+                    <option value="AF">AF</option>
+                    <option value="BM">BM</option>
+                    <option value="CM">CM</option>
+                </select>
             </div>
 
             <div class="form-group">
@@ -61,6 +66,13 @@
         </form>
         <div id="message"></div>
     </div>
+    <button type="submit">Registrar Venta/Consignación</button>
+
+            <button type="button" onclick="reingresarInventario()" 
+                    style="background-color: #ffc107; color: black; margin-top: 15px;">
+                Reingresar Celular (Devolución)
+            </button>
+        </form>
 
     <script>
         document.getElementById('saleForm').onsubmit = async (e) => {
@@ -108,6 +120,41 @@
                 messageElement.className = 'error';
             }
             messageElement.style.display = 'block';
+            // Función para reingresar un celular (devolución)
+        async function reingresarInventario() {
+            const messageElement = document.getElementById('message');
+            messageElement.style.display = 'none';
+            messageElement.className = '';
+
+            const imei = document.getElementById('imei').value.trim();
+
+            if (!imei) {
+                messageElement.textContent = 'Error: Debe escanear o ingresar un IMEI para el reingreso.';
+                messageElement.className = 'error';
+                messageElement.style.display = 'block';
+                return;
+            }
+
+            const data = { imei: imei };
+
+            const response = await fetch('/api/v1/inventario/reingreso', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                messageElement.textContent = `¡IMEI ${result.imei} reingresado! Estado anterior: ${result.estado_anterior}. Ahora está en 'En Inventario'.`;
+                messageElement.className = 'success';
+                document.getElementById('saleForm').reset(); // Limpiar formulario
+            } else {
+                messageElement.textContent = `Error (${response.status}): ${result.detail}`;
+                messageElement.className = 'error';
+            }
+            messageElement.style.display = 'block';
+        }
         };
     </script>
 </body>

@@ -14,8 +14,11 @@
         .cost-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         .cost-item input { flex-grow: 1; margin-bottom: 0; }
         .cost-item button { flex-shrink: 0; background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-        #costos-detalle { border: 1px dashed #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        #imeis { resize: vertical; }
+        #costos-detalle, #articulos-detalle { border: 1px dashed #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .imeis-list-textarea { resize: vertical; }
+        .articulo-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        .articulo-controls select, .articulo-controls input[type="number"] { margin-bottom: 0; }
+        .articulo-controls button { height: 40px; }
         button[type="submit"] {
             background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; 
             font-size: 1.1em; width: 100%; transition: background-color 0.3s;
@@ -58,9 +61,16 @@
                 <button type="button" onclick="addCostItem()">+ Añadir Pago (TRM/Monto USD)</button>
             </div>
             
-            <div class="form-group">
-                <label for="imeis">IMEIs (Escanear uno por línea):</label>
-                <textarea id="imeis" rows="10" required></textarea>
+            <h2>📱 Desglose de Artículos y Escaneo</h2>
+            <div id="articulos-detalle">
+                <p>Selecciona la referencia, la cantidad y escanea los IMEIs.</p>
+                <div id="articulos-list">
+                    </div>
+                <button type="button" onclick="addArticuloItem()">+ Añadir Referencia de Celular</button>
+            </div>
+
+            <div id="imei-summary" style="margin-top: 15px; padding: 10px; background-color: #e9ecef; border-radius: 6px;">
+                Total de IMEIs a escanear: <span id="imei-expected" style="font-weight: bold;">0</span> | Total IMEIs Escaneados: <span id="imei-scanned" style="font-weight: bold;">0</span>
             </div>
 
             <button type="submit">Registrar Lote</button>
@@ -69,7 +79,20 @@
     </div>
 
     <script>
-        // Función para mostrar/ocultar el campo "Otro Proveedor"
+        // DATOS DE REFERENCIA DE IPHONE
+        const IPHONE_REFERENCES = [
+            { name: 'iPhone 13', capacities: ['128GB', '256GB', '512GB'] },
+            { name: 'iPhone 14', capacities: ['128GB', '256GB', '512GB'] },
+            { name: 'iPhone 15', capacities: ['128GB', '256GB', '512GB'] },
+            { name: 'iPhone 15 Pro', capacities: ['128GB', '256GB', '512GB', '1TB'] },
+            // Añadir iPhone 16 y superiores si son relevantes para futuras compras
+            { name: 'iPhone 16', capacities: ['128GB', '256GB', '512GB', '1TB'] }
+        ];
+
+        let costItemCount = 0;
+        let articuloItemCount = 0;
+
+        // --- Funciones de Proveedor y Desglose de Pagos (TRM) ---
         function toggleOtroProveedor() {
             const select = document.getElementById('proveedor');
             const inputOtro = document.getElementById('otro_proveedor');
@@ -82,10 +105,6 @@
             }
         }
 
-        // Contador para IDs de ítems de costo
-        let costItemCount = 0;
-
-        // Función para añadir campos TRM y Monto USD
         function addCostItem() {
             const list = document.getElementById('cost-items-list');
             const id = 'cost-item-' + costItemCount++;
@@ -101,27 +120,98 @@
             list.appendChild(div);
         }
 
-        // Función para remover campos de costo
         function removeCostItem(id) {
             document.getElementById(id).remove();
         }
 
-        // Lógica de Envío del Formulario
+        // --- Funciones de Artículos y Escaneo (IMEI) ---
+
+        function populateCapacities(selectModelo, selectCapacidadId) {
+            const modeloSeleccionado = selectModelo.value;
+            const selectCapacidad = document.getElementById(selectCapacidadId);
+            selectCapacidad.innerHTML = '<option value="">Seleccione Capacidad</option>';
+
+            if (modeloSeleccionado) {
+                const ref = IPHONE_REFERENCES.find(r => r.name === modeloSeleccionado);
+                if (ref) {
+                    ref.capacities.forEach(cap => {
+                        const option = document.createElement('option');
+                        option.value = cap;
+                        option.textContent = cap;
+                        selectCapacidad.appendChild(option);
+                    });
+                }
+            }
+        }
+
+        function updateImeiSummary() {
+            let totalEsperado = 0;
+            let totalEscaneado = 0;
+
+            document.querySelectorAll('.cantidad-input').forEach(input => {
+                totalEsperado += parseInt(input.value) || 0;
+            });
+
+            document.querySelectorAll('.imeis-list-textarea').forEach(textarea => {
+                const imeis = textarea.value.split('\n').filter(imei => imei.trim() !== '');
+                totalEscaneado += imeis.length;
+            });
+
+            document.getElementById('imei-expected').textContent = totalEsperado;
+            document.getElementById('imei-scanned').textContent = totalEscaneado;
+        }
+
+        function addArticuloItem() {
+            const list = document.getElementById('articulos-list');
+            const id = 'articulo-item-' + articuloItemCount++;
+            
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.id = id;
+            
+            // Controles de Modelo, Capacidad y Cantidad
+            let html = `
+                <hr>
+                <div class="articulo-controls">
+                    <select class="modelo-select" onchange="populateCapacities(this, 'capacidad-${id}')" required style="flex: 2;">
+                        <option value="">Seleccione Modelo</option>
+                        ${IPHONE_REFERENCES.map(r => `<option value="${r.name}">${r.name}</option>`).join('')}
+                    </select>
+                    <select id="capacidad-${id}" class="capacidad-select" required style="flex: 1;"></select>
+                    <input type="number" class="cantidad-input" placeholder="Cant." min="1" required style="flex: 0.5;" oninput="updateImeiSummary()">
+                    <button type="button" onclick="removeArticuloItem('${id}')" style="flex: 0.5;">- Eliminar</button>
+                </div>
+                <label>IMEIs a escanear (${id}):</label>
+                <textarea class="imeis-list-textarea" rows="4" placeholder="Escanee los IMEIs aquí, uno por línea." oninput="updateImeiSummary()"></textarea>
+            `;
+            div.innerHTML = html;
+            list.appendChild(div);
+            
+            updateImeiSummary();
+        }
+
+        function removeArticuloItem(id) {
+            document.getElementById(id).remove();
+            updateImeiSummary();
+        }
+
+        // --- Lógica de Envío del Formulario (Submit) ---
+
         document.getElementById('entryForm').onsubmit = async (e) => {
             e.preventDefault();
             const messageElement = document.getElementById('message');
             messageElement.style.display = 'none';
             messageElement.className = '';
 
+            // 1. Recolección de Datos Generales
             const proveedorSelect = document.getElementById('proveedor');
             const proveedor = proveedorSelect.value === 'Otro' 
                               ? document.getElementById('otro_proveedor').value.trim() 
                               : proveedorSelect.value;
             
-            const imeisText = document.getElementById('imeis').value;
-            const imeisList = imeisText.split('\n').filter(imei => imei.trim() !== '').map(imei => ({ imei: imei.trim() }));
+            const costoTotalOrden = parseFloat(document.getElementById('costo_total_orden').value);
 
-            // Capturar el desglose de costos
+            // 2. Consolidación de Costos y Validación de Monto
             const costosDetalle = [];
             let totalMontoUSD = 0;
             const trmInputs = document.querySelectorAll('.trm-input');
@@ -130,9 +220,9 @@
             for (let i = 0; i < trmInputs.length; i++) {
                 const trm = parseFloat(trmInputs[i].value);
                 const monto = parseFloat(montoInputs[i].value);
-
-                if (isNaN(trm) || isNaN(monto)) {
-                    messageElement.textContent = 'Error: Revise los valores de TRM y Monto USD.';
+                
+                if (isNaN(trm) || isNaN(monto) || trm <= 0 || monto <= 0) {
+                    messageElement.textContent = 'Error: Revise los valores de TRM y Monto USD. Deben ser positivos.';
                     messageElement.className = 'error';
                     messageElement.style.display = 'block';
                     return;
@@ -141,33 +231,70 @@
                 totalMontoUSD += monto;
             }
 
-            const costoTotalOrden = parseFloat(document.getElementById('costo_total_orden').value);
-            
-            // Validación de Consistencia de Costo
             if (Math.abs(totalMontoUSD - costoTotalOrden) > 0.01) {
                 messageElement.textContent = `Error: La suma de Montos USD ($${totalMontoUSD.toFixed(2)}) no coincide con el Costo Total de la Orden ($${costoTotalOrden.toFixed(2)}).`;
                 messageElement.className = 'error';
                 messageElement.style.display = 'block';
                 return;
             }
-            
-            // Cálculo del Costo Unitario Promedio Ponderado
-            // Se calcula el costo total en COP de todos los pagos
+
+            // 3. Consolidación de IMEIs, Validación de Cantidad y Creación de Lista Final
             let costoTotalCOP = 0;
             costosDetalle.forEach(item => {
                 costoTotalCOP += item.trm * item.monto_usd;
             });
-            // Costo unitario promedio en COP = Costo Total COP / Número de IMEIs
-            const costoUnitarioCOP = costoTotalCOP / imeisList.length;
+            
+            const imeisListFinal = [];
+            let totalEsperado = 0;
+            let totalEscaneado = 0;
 
+            const articulos = document.querySelectorAll('.form-group[id^="articulo-item-"]');
+
+            articulos.forEach(articulo => {
+                const modelo = articulo.querySelector('.modelo-select').value;
+                const capacidad = articulo.querySelector('.capacidad-select').value;
+                const cantidadInput = articulo.querySelector('.cantidad-input');
+                const textarea = articulo.querySelector('.imeis-list-textarea');
+
+                const esperada = parseInt(cantidadInput.value) || 0;
+                const imeisEscaneados = textarea.value.split('\n').filter(imei => imei.trim() !== '');
+                
+                totalEsperado += esperada;
+                totalEscaneado += imeisEscaneados.length;
+
+                if (esperada !== imeisEscaneados.length) {
+                    messageElement.textContent = `Error: La cantidad escaneada (${imeisEscaneados.length}) para ${modelo} ${capacidad} no coincide con la cantidad esperada (${esperada}).`;
+                    messageElement.className = 'error';
+                    messageElement.style.display = 'block';
+                    throw new Error("Cantidad no coincide."); // Detiene la ejecución
+                }
+
+                // Agregar los IMEIs a la lista final
+                imeisEscaneados.forEach(imei => {
+                    imeisListFinal.push({ imei: imei.trim() });
+                });
+            });
+
+            if (totalEsperado === 0) {
+                messageElement.textContent = 'Error: Debe especificar la cantidad de artículos a ingresar.';
+                messageElement.className = 'error';
+                messageElement.style.display = 'block';
+                return;
+            }
+
+            // Cálculo final del costo unitario ponderado
+            const costoUnitarioCOP = costoTotalCOP / totalEsperado;
+
+            // 4. Preparar datos para FastAPI
             const data = {
                 oc_id: document.getElementById('oc_id').value,
-                proveedor: proveedor, // Nuevo campo
-                costo_total_usd: costoTotalOrden, // Nuevo campo
-                costo_unitario_cop: costoUnitarioCOP, // Nuevo campo
-                imeis: imeisList
+                proveedor: proveedor, 
+                costo_total_usd: costoTotalOrden, 
+                costo_unitario_cop: costoUnitarioCOP, 
+                imeis: imeisListFinal // Lista completa de IMEIs
             };
 
+            // 5. Envío a la API
             const response = await fetch('/api/v1/inventario/entrada', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -179,7 +306,12 @@
             if (response.ok) {
                 messageElement.textContent = `¡Lote de ${result.count} celulares (OC: ${result.oc_id}) registrado! Costo Unitario Promedio: $${costoUnitarioCOP.toFixed(2)} COP.`;
                 messageElement.className = 'success';
-                document.getElementById('entryForm').reset(); // Limpiar formulario
+                document.getElementById('entryForm').reset();
+                document.getElementById('articulos-list').innerHTML = ''; // Limpiar items dinámicos
+                document.getElementById('cost-items-list').innerHTML = ''; // Limpiar costos
+                document.addEventListener('DOMContentLoaded', addCostItem); // Inicializar
+                document.addEventListener('DOMContentLoaded', addArticuloItem); // Inicializar
+                updateImeiSummary(); // Resetear contadores
             } else {
                 messageElement.textContent = `Error: ${result.detail}`;
                 messageElement.className = 'error';
@@ -187,8 +319,11 @@
             messageElement.style.display = 'block';
         };
 
-        // Inicializar un campo de costo al cargar la página
-        document.addEventListener('DOMContentLoaded', addCostItem);
+        // Inicializar un campo de costo y un artículo al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            addCostItem(); 
+            addArticuloItem();
+        });
     </script>
 </body>
 </html>

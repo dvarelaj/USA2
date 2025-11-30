@@ -97,6 +97,38 @@ def register_sale(data: CelularSalida, db: Session = Depends(get_db)):
 
     return {"status": "success", "imei": db_celular.imei, "nuevo_estado": db_celular.estado}
 
+@app.post("/api/v1/inventario/reingreso")
+def register_reentry(imei_data: CelularEntry, db: Session = Depends(get_db)):
+    """Reingresa un celular al inventario (ej. por devolución de consignación)."""
+    
+    db_celular = db.query(models.Celular).filter(models.Celular.imei == imei_data.imei).first()
+
+    if not db_celular:
+        raise HTTPException(status_code=404, detail="IMEI no encontrado.")
+    
+    # Permitir reingreso solo si el estado es Consignación o Vendido (en caso de devolución)
+    if db_celular.estado not in ["Entregado Consignacion", "Vendido"]:
+        raise HTTPException(status_code=400, detail=f"El celular ya está en estado {db_celular.estado}. Solo se pueden reingresar ítems en Consignación o Vendidos.")
+
+    # Revertir el estado y limpiar campos de salida
+    previous_state = db_celular.estado
+    db_celular.estado = "En Inventario"
+    db_celular.cliente_consignacion = None
+    db_celular.vendedor = None
+    db_celular.fecha_salida = None
+    db_celular.precio_venta = None
+
+    db.add(db_celular)
+    db.commit()
+    db.refresh(db_celular)
+
+    return {
+        "status": "success", 
+        "imei": db_celular.imei, 
+        "estado_anterior": previous_state,
+        "nuevo_estado": db_celular.estado
+    }
+
 @app.get("/api/v1/ordenes/balance")
 def get_ordenes_balance(db: Session = Depends(get_db)):
     """Retorna el balance de costo vs. venta y el estado de cierre para cada OC."""
