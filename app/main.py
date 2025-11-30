@@ -6,7 +6,7 @@ from typing import List
 
 from . import models
 from .database import engine, get_db
-
+from sqlalchemy import func, case, extract, cast, Date # Agregar 'case', 'extract', 'cast', 'Date'
 # Crear todas las tablas en la DB (solo si no existen)
 models.Base.metadata.create_all(bind=engine)
 
@@ -95,23 +95,54 @@ def register_sale(data: CelularSalida, db: Session = Depends(get_db)):
     return {"status": "success", "imei": db_celular.imei, "nuevo_estado": db_celular.estado}
 
 
-@app.get("/api/v1/inventario/dashboard")
-def get_dashboard_data(db: Session = Depends(get_db)):
-    """Retorna datos agregados para el dashboard."""
-    total_inventario = db.query(models.Celular).count()
+@app.get("/api/v1/ordenes/balance")
+def get_ordenes_balance(db: Session = Depends(get_db)):
+    """Retorna el balance de costo vs. venta y el estado de cierre para cada OC."""
     
-    # Datos de consignación
-    consignacion = db.query(models.Celular).filter(
-        models.Celular.estado == "Entregado Consignacion"
-    ).all()
-    
-    # Datos por OC para el balance (simplificado)
-    # Aquí se usarían agrupaciones (group_by) más complejas en SQL
-    return {
-        "total_unidades": total_inventario,
-        "en_consignacion": len(consignacion),
-        "detalle_consignacion": [
-            {"imei": c.imei, "cliente": c.cliente_consignacion, "oc": c.oc_id} 
-            for c in consignacion
-        ]
-    }
+    # 1. Agregación de datos por OC
+    balance_query = db.query(
+        models.Celular.oc_id.label("orden_compra"),
+        func.count(models.Celular.imei).label("total_unidades"),
+        
+        # Total Costo de Compra
+        func.sum(models.Celular.costo_cop).label("costo_total_compra"),
+        
+        # Total Ingreso de Venta (solo unidades vendidas)
+        func.sum(case(
+            (models.Celular.estado == "Vendido", models.Celular.precio_venta),
+            else_=0
+        )).label("ingreso_total_venta"),
+        
+        # Unidades en Consignación
+        func.sum(case(
+            (models.Celular.estado == "Entregado Consignacion", 1),
+            else_=0
+        )).label("unidades_consignacion"),
+        
+        # Unidades Disponibles (En Inventario)
+        func.sum(case(
+            (models.Celular.estado == "En Inventario", 1),
+            else_=0
+        )).label("unidades_disponibles")
+        
+    ).group_by(models.Celular.oc_id).all()
+
+    # 2. Formatear resultados
+    resultados = []
+    for row in balance_query:
+        # La OC está cerrada si no quedan unidades en inventario, vendidas, o en consignación
+        # (Aunque el cálculo se hace en base a 'disponibles' y 'consignación' restantes)
+        pendientes = row.unidades_disponibles + row.unidades_consignacion
+        
+        resultados.append({
+            "orden_compra": row.orden_compra,
+            "total_unidades": row.total_unidades,
+            "costo_total_compra": round(row.costo_total_compra or 0, 2),
+            "ingreso_total_venta": round(row.ingreso_total_venta or 0, 2),
+            "utilidad_bruta": round((row.ingreso_total_venta or 0) - (row.costo_total_compra or 0), 2),
+            "unidades_consignacion": row.unidades_consignacion,
+            "unidades_disponibles": row.unidades_disponibles,
+            "estado_cierre": "CERRADA" if pendientes == 0 else "ABIERTA"
+        })
+        
+    return {"ordenes_resumen": resultados}
