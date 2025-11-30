@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro de Venta</title>
+</head>
+<body>
+    <h1>Registro de Salida</h1>
+    <form id="saleForm">
+        <label for="imei">IMEI (Escanear aquí):</label><br>
+        <input type="text" id="imei" name="imei" required><br><br>
+
+        <label for="tipo_cliente">Tipo de Cliente:</label><br>
+        <select id="tipo_cliente" name="tipo_cliente" required>
+            <option value="">Seleccione...</option>
+            <option value="Detal">Venta Detal</option>
+            <option value="Consignacion">Entrega en Consignación</option>
+        </select><br><br>
+
+        <label for="nombre_cliente">Nombre Cliente/Negocio:</label><br>
+        <input type="text" id="nombre_cliente" name="nombre_cliente" required><br><br>
+        
+        <label for="precio_venta">Precio de Venta:</label><br>
+        <input type="number" id="precio_venta" name="precio_venta" step="0.01" required><br><br>
+
+        <button type="submit">Registrar Venta/Consignación</button>
+    </form>
+    <p id="message"></p>
+
+    <script>
+        document.getElementById('saleForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const data = {
+                imei: document.getElementById('imei').value.trim(),
+                tipo_cliente: document.getElementById('tipo_cliente').value,
+                nombre_cliente: document.getElementById('nombre_cliente').value,
+                precio_venta: parseFloat(document.getElementById('precio_venta').value)
+            };
+
+            const response = await fetch('/api/v1/inventario/salida', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            const messageElement = document.getElementById('message');
+
+            if (response.ok) {
+                messageElement.textContent = `IMEI ${result.imei} registrado. Nuevo estado: ${result.nuevo_estado}.`;
+                messageElement.style.color = 'green';
+            } else {
+                messageElement.textContent = `Error: ${result.detail}`;
+                messageElement.style.color = 'red';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Entrada de Inventario</title>
+</head>
+<body>
+    <h1>Entrada de Lote de Celulares</h1>
+    <form id="entryForm">
+        <label for="oc_id">Orden de Compra (OC):</label><br>
+        <input type="text" id="oc_id" name="oc_id" required><br><br>
+
+        <label for="trm">TRM de la Compra:</label><br>
+        <input type="number" id="trm" name="trm" step="0.01" required><br><br>
+
+        <label for="costo_usd">Costo Unitario (USD):</label><br>
+        <input type="number" id="costo_usd" name="costo_usd" step="0.01" required><br><br>
+        
+        <label for="imeis">IMEIs (Escanear uno por línea):</label><br>
+        <textarea id="imeis" name="imeis" rows="10" cols="30" required></textarea><br><br>
+
+        <button type="submit">Registrar Lote</button>
+    </form>
+    <p id="message"></p>
+
+    <script>
+        document.getElementById('entryForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const imeisText = document.getElementById('imeis').value;
+            const imeisList = imeisText.split('\n').filter(imei => imei.trim() !== '').map(imei => ({ imei: imei.trim() }));
+
+            const data = {
+                oc_id: document.getElementById('oc_id').value,
+                trm: parseFloat(document.getElementById('trm').value),
+                costo_usd: parseFloat(document.getElementById('costo_usd').value),
+                imeis: imeisList
+            };
+
+            const response = await fetch('/api/v1/inventario/entrada', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            const messageElement = document.getElementById('message');
+
+            if (response.ok) {
+                messageElement.textContent = `¡Lote de ${result.count} celulares de la OC ${result.oc_id} registrado exitosamente!`;
+                messageElement.style.color = 'green';
+            } else {
+                messageElement.textContent = `Error: ${result.detail}`;
+                messageElement.style.color = 'red';
+            }
+        };
+    </script>
+</body>
+</html>
