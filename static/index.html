@@ -79,14 +79,82 @@
     </div>
 
     <script>
-        // DATOS DE REFERENCIA DE IPHONE
+        // DATOS DE REFERENCIA DE IPHONE Y OTROS ARTÍCULOS
+        // Se han actualizado las referencias basándose en la lista proporcionada.
         const IPHONE_REFERENCES = [
-            { name: 'iPhone 13', capacities: ['128GB', '256GB', '512GB'] },
-            { name: 'iPhone 14', capacities: ['128GB', '256GB', '512GB'] },
-            { name: 'iPhone 15', capacities: ['128GB', '256GB', '512GB'] },
-            { name: 'iPhone 15 Pro', capacities: ['128GB', '256GB', '512GB', '1TB'] },
-            // Añadir iPhone 16 y superiores si son relevantes para futuras compras
-            { name: 'iPhone 16', capacities: ['128GB', '256GB', '512GB', '1TB'] }
+            { 
+                name: 'iPhone 13', 
+                capacities: ['128GB'] // Capacidad 128GB confirmada en la lista
+            },
+            { 
+                name: 'iPhone 13 mini', 
+                capacities: ['128GB'] // Capacidad 128GB confirmada en la lista
+            },
+            { 
+                name: 'iPhone 13 Pro', 
+                capacities: ['128GB', '256GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 13 Pro Max', 
+                capacities: ['128GB', '256GB', '512GB', '1TB'] // Se asumen todas las capacidades
+            },
+            { 
+                name: 'iPhone 14', 
+                capacities: ['128GB', '256GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 14 Plus', 
+                capacities: ['128GB'] // Capacidad 128GB confirmada en la lista
+            },
+            { 
+                name: 'iPhone 14 Pro', 
+                capacities: ['128GB', '256GB', '512GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 14 Pro Max', 
+                capacities: ['128GB', '256GB', '512GB', '1TB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 15', 
+                capacities: ['128GB', '256GB', '512GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 15 Pro', 
+                capacities: ['128GB', '256GB', '512GB', '1TB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 15 Pro Max', 
+                capacities: ['256GB', '512GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 16', 
+                capacities: ['128GB', '256GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 16 Pro', 
+                capacities: ['256GB', '512GB', '1TB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 16 Pro Max', 
+                capacities: ['256GB', '512GB'] // Capacidades confirmadas en la lista
+            },
+            { 
+                name: 'iPhone 16E', 
+                capacities: ['128GB'] // Capacidad 128GB confirmada en la lista (Modelo 16E)
+            },
+            { 
+                name: 'iPhone 17 Pro Max', 
+                capacities: ['256GB', '512GB'] // Capacidades confirmadas en la lista (Modelo 17 Pro Max)
+            },
+            // --- Otros Artículos (Sin IMEI) ---
+            { 
+                name: 'iPad', 
+                capacities: ['A 16GB', 'AIR 256GB'] // Referencias de iPad confirmadas en la lista
+            },
+            { 
+                name: 'Accesorios', 
+                capacities: ['CARGADOR 20W C', 'MAGIC MOUSE'] // Accesorios confirmados en la lista
+            }
         ];
 
         let costItemCount = 0;
