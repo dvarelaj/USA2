@@ -1,37 +1,170 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Entrada de Inventario</title>
+    <title>Entrada de Inventario de Celulares</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        input[type="text"], input[type="number"], select, textarea { 
+            width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; 
+        }
+        .form-group { margin-bottom: 20px; }
+        .cost-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .cost-item input { flex-grow: 1; margin-bottom: 0; }
+        .cost-item button { flex-shrink: 0; background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        #costos-detalle { border: 1px dashed #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        #imeis { resize: vertical; }
+        button[type="submit"] {
+            background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; 
+            font-size: 1.1em; width: 100%; transition: background-color 0.3s;
+        }
+        button[type="submit"]:hover { background-color: #218838; }
+        #message { margin-top: 20px; padding: 15px; border-radius: 6px; text-align: center; font-weight: bold; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
 </head>
 <body>
-    <h1>Entrada de Lote de Celulares</h1>
-    <form id="entryForm">
-        <label for="oc_id">Orden de Compra (OC):</label><br>
-        <input type="text" id="oc_id" name="oc_id" required><br><br>
+    <div class="container">
+        <h1>📦 Entrada de Lote de Celulares</h1>
+        <form id="entryForm">
+            <div class="form-group">
+                <label for="oc_id">Orden de Compra (OC):</label>
+                <input type="text" id="oc_id" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="proveedor">Proveedor:</label>
+                <select id="proveedor" onchange="toggleOtroProveedor()">
+                    <option value="Alex Zeng IV-1997">Alex Zeng IV-1997</option>
+                    <option value="CR">CR</option>
+                    <option value="Otro">Otro (Ingresar manual)</option>
+                </select>
+                <input type="text" id="otro_proveedor" placeholder="Ingrese nombre del proveedor" style="display: none; margin-top: 5px;">
+            </div>
 
-        <label for="trm">TRM de la Compra:</label><br>
-        <input type="number" id="trm" name="trm" step="0.01" required><br><br>
+            <div class="form-group">
+                <label for="costo_total_orden">Costo Total de la Orden (USD):</label>
+                <input type="number" id="costo_total_orden" step="0.01" required>
+            </div>
 
-        <label for="costo_usd">Costo Unitario (USD):</label><br>
-        <input type="number" id="costo_usd" name="costo_usd" step="0.01" required><br><br>
-        
-        <label for="imeis">IMEIs (Escanear uno por línea):</label><br>
-        <textarea id="imeis" name="imeis" rows="10" cols="30" required></textarea><br><br>
+            <h2>💰 Detalle de Pagos de la Orden</h2>
+            <div id="costos-detalle">
+                <p>Añade cada pago con su respectiva TRM para calcular el costo real de la orden:</p>
+                <div id="cost-items-list">
+                    </div>
+                <button type="button" onclick="addCostItem()">+ Añadir Pago (TRM/Monto USD)</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="imeis">IMEIs (Escanear uno por línea):</label>
+                <textarea id="imeis" rows="10" required></textarea>
+            </div>
 
-        <button type="submit">Registrar Lote</button>
-    </form>
-    <p id="message"></p>
+            <button type="submit">Registrar Lote</button>
+        </form>
+        <div id="message" class="success"></div>
+    </div>
 
     <script>
+        // Función para mostrar/ocultar el campo "Otro Proveedor"
+        function toggleOtroProveedor() {
+            const select = document.getElementById('proveedor');
+            const inputOtro = document.getElementById('otro_proveedor');
+            if (select.value === 'Otro') {
+                inputOtro.style.display = 'block';
+                inputOtro.setAttribute('required', 'required');
+            } else {
+                inputOtro.style.display = 'none';
+                inputOtro.removeAttribute('required');
+            }
+        }
+
+        // Contador para IDs de ítems de costo
+        let costItemCount = 0;
+
+        // Función para añadir campos TRM y Monto USD
+        function addCostItem() {
+            const list = document.getElementById('cost-items-list');
+            const id = 'cost-item-' + costItemCount++;
+            
+            const div = document.createElement('div');
+            div.className = 'cost-item';
+            div.id = id;
+            div.innerHTML = `
+                <input type="number" class="trm-input" placeholder="TRM" step="0.01" required>
+                <input type="number" class="monto-usd-input" placeholder="Monto USD" step="0.01" required>
+                <button type="button" onclick="removeCostItem('${id}')">X</button>
+            `;
+            list.appendChild(div);
+        }
+
+        // Función para remover campos de costo
+        function removeCostItem(id) {
+            document.getElementById(id).remove();
+        }
+
+        // Lógica de Envío del Formulario
         document.getElementById('entryForm').onsubmit = async (e) => {
             e.preventDefault();
+            const messageElement = document.getElementById('message');
+            messageElement.style.display = 'none';
+            messageElement.className = '';
+
+            const proveedorSelect = document.getElementById('proveedor');
+            const proveedor = proveedorSelect.value === 'Otro' 
+                              ? document.getElementById('otro_proveedor').value.trim() 
+                              : proveedorSelect.value;
+            
             const imeisText = document.getElementById('imeis').value;
             const imeisList = imeisText.split('\n').filter(imei => imei.trim() !== '').map(imei => ({ imei: imei.trim() }));
 
+            // Capturar el desglose de costos
+            const costosDetalle = [];
+            let totalMontoUSD = 0;
+            const trmInputs = document.querySelectorAll('.trm-input');
+            const montoInputs = document.querySelectorAll('.monto-usd-input');
+
+            for (let i = 0; i < trmInputs.length; i++) {
+                const trm = parseFloat(trmInputs[i].value);
+                const monto = parseFloat(montoInputs[i].value);
+
+                if (isNaN(trm) || isNaN(monto)) {
+                    messageElement.textContent = 'Error: Revise los valores de TRM y Monto USD.';
+                    messageElement.className = 'error';
+                    messageElement.style.display = 'block';
+                    return;
+                }
+                costosDetalle.push({ trm: trm, monto_usd: monto });
+                totalMontoUSD += monto;
+            }
+
+            const costoTotalOrden = parseFloat(document.getElementById('costo_total_orden').value);
+            
+            // Validación de Consistencia de Costo
+            if (Math.abs(totalMontoUSD - costoTotalOrden) > 0.01) {
+                messageElement.textContent = `Error: La suma de Montos USD ($${totalMontoUSD.toFixed(2)}) no coincide con el Costo Total de la Orden ($${costoTotalOrden.toFixed(2)}).`;
+                messageElement.className = 'error';
+                messageElement.style.display = 'block';
+                return;
+            }
+            
+            // Cálculo del Costo Unitario Promedio Ponderado
+            // Se calcula el costo total en COP de todos los pagos
+            let costoTotalCOP = 0;
+            costosDetalle.forEach(item => {
+                costoTotalCOP += item.trm * item.monto_usd;
+            });
+            // Costo unitario promedio en COP = Costo Total COP / Número de IMEIs
+            const costoUnitarioCOP = costoTotalCOP / imeisList.length;
+
             const data = {
                 oc_id: document.getElementById('oc_id').value,
-                trm: parseFloat(document.getElementById('trm').value),
-                costo_usd: parseFloat(document.getElementById('costo_usd').value),
+                proveedor: proveedor, // Nuevo campo
+                costo_total_usd: costoTotalOrden, // Nuevo campo
+                costo_unitario_cop: costoUnitarioCOP, // Nuevo campo
                 imeis: imeisList
             };
 
@@ -42,16 +175,20 @@
             });
 
             const result = await response.json();
-            const messageElement = document.getElementById('message');
 
             if (response.ok) {
-                messageElement.textContent = `¡Lote de ${result.count} celulares de la OC ${result.oc_id} registrado exitosamente!`;
-                messageElement.style.color = 'green';
+                messageElement.textContent = `¡Lote de ${result.count} celulares (OC: ${result.oc_id}) registrado! Costo Unitario Promedio: $${costoUnitarioCOP.toFixed(2)} COP.`;
+                messageElement.className = 'success';
+                document.getElementById('entryForm').reset(); // Limpiar formulario
             } else {
                 messageElement.textContent = `Error: ${result.detail}`;
-                messageElement.style.color = 'red';
+                messageElement.className = 'error';
             }
+            messageElement.style.display = 'block';
         };
+
+        // Inicializar un campo de costo al cargar la página
+        document.addEventListener('DOMContentLoaded', addCostItem);
     </script>
 </body>
 </html>
